@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Welcome to this comprehensive guide on advanced statistical analysis of traffic accident data using PowerBI. This tutorial will walk you through implementing sophisticated statistical measures, creating meaningful visualizations, and building a robust analytical framework. By the end, you'll have a powerful suite of tools for analyzing traffic safety patterns and identifying significant trends.
+This tutorial will guide you through using Power BI's Data Analysis Expressions (DAX) for complex data modelling and advanced exploratory data analysis (EDA). You’ll also learn to apply statistical tests like hypothesis testing and ANOVA directly within Power BI to gain insights from a sample dataset on traffic accidents.
 
 ## Part 1: Data Import and Statistical Foundation
 
@@ -27,7 +27,24 @@ Now, let's bring our accident data into PowerBI:
    - Data Type Detection: Based on entire dataset
 5. Click 'Transform Data'.
 
-### 1.3 Setting Data Types
+### 1.3. **Choose Only the Required Columns**:
+
+- Identify and select the required columns for this tutorial:
+  - `accident_index`
+  - `accident_severity`
+  - `number_of_vehicles`
+  - `day_of_week`
+  - `latitude`
+  - `longitude`
+  - `local_authority_district`
+- To select multiple columns, hold down the **Ctrl** key and click on each required column.
+
+### 1.4. **Remove Unselected Columns**:
+
+- With the required columns selected, go to the **Home** tab in Power Query Editor.
+- Click **Remove Columns > Remove Other Columns**. This will delete all columns except the ones you selected.
+
+### 1.5. **Check Data Types**
 
 Proper data types are crucial for accurate analysis. Let's set them for our key columns:
 
@@ -40,285 +57,180 @@ Proper data types are crucial for accurate analysis. Let's set them for our key 
 
 To change a data type, click the data type icon next to each column name.
 
-### 1.4 Creating Statistical Groupings
+### 1.6. **Confirm and Apply Changes**:
 
-To make our analysis more meaningful, we'll create categorical groupings that will help us identify patterns:
+- Review your dataset to ensure only the necessary columns remain.
+- Once confirmed, click **Close & Apply** in the top-left corner to apply your changes
 
-1. Severity Category:
+### 1.7. **Renaming the Data Table in Power BI**
 
-   - Click 'Add Column' → 'Custom Column'
-   - Name it "SeverityCategory"
-   - This categorization helps us analyze patterns across different accident severities
-   - Use this formula:
-     ```
-     = if [accident_severity] = 1 then "Fatal"
-     else if [accident_severity] = 2 then "Serious"
-     else "Slight"
-     ```
-   - This transformation makes our data more interpretable for stakeholders
+Renaming your data table to something more intuitive helps keep your Power BI project organised and makes it easier to reference the table in measures and visuals. Here’s how to change the table name from `dft-road-casualty-statistics-collision-2023` to `Accidents`.
 
-2. Time Period:
-   - Again, click 'Add Column' → 'Custom Column'
-   - Name it "TimePeriod"
-   - This grouping allows us to identify time-based patterns that might not be visible in raw hour data
-   - Use this formula:
-     ```
-     = if HOUR([time]) >= 0 && HOUR([time]) < 6 then "Night"
-     else if HOUR([time]) >= 6 && HOUR([time]) < 12 then "Morning"
-     else if HOUR([time]) >= 12 && HOUR([time]) < 18 then "Afternoon"
-     else "Evening"
-     ```
-   - This categorization helps identify risk patterns across different times of day
+**Steps to Rename the Data Table**
 
-## Part 2: Creating Statistical Measures
+1. **Open Fields Pane**:
 
-### 2.1 Basic Statistical Measures
+   - In Power BI Desktop, locate the **Fields** pane on the right side of the window.
+   - Find the table named `dft-road-casualty-statistics-collision-2023`.
 
-These measures form the foundation of our statistical analysis. They'll help us understand the central tendency and spread of our accident data:
+2. **Rename the Table**:
 
-1. Mean Casualties:
+   - Right-click on the table name (`dft-road-casualty-statistics-collision-2023`).
+   - Select **Rename** from the context menu.
+   - Type the new name: `Accidents`.
+   - Press **Enter** to save the new name.
 
-   - This measure calculates the average number of casualties per accident
-   - Click 'New Measure' and enter:
-     ```
-     MeanCasualties = AVERAGE(Accidents[number_of_casualties])
-     ```
-   - This serves as our baseline for identifying unusual events
+3. **Confirm the Change**:
+   - Check that the table name in the **Fields** pane now shows as `Accidents`.
+   - Any references to this table in existing visuals or measures will automatically update to the new name.
 
-2. Standard Deviation:
+## Part 2: Setting Up the Dataset and Initial EDA
 
-   - This measure helps us understand the typical variation in casualty numbers
-   - It's crucial for identifying significant deviations from normal patterns
-   - Create the measure:
-     ```
-     StdDevCasualties =
-     SQRT(
-         AVERAGEX(
-             Accidents,
-             POWER(Accidents[number_of_casualties] - [MeanCasualties], 2)
-         )
-     )
-     ```
-   - This will be used for our control charts and significance testing
+### 2.1 Creating Basic Measures in DAX
 
-3. Coefficient of Variation:
-   - This gives us a standardized measure of variability
-   - Particularly useful when comparing different areas or time periods
-   - Create using:
-     ```
-     CV_Casualties =
-     DIVIDE([StdDevCasualties], [MeanCasualties])
-     ```
-   - Values above 1 indicate high variability that requires investigation
+1. **Define basic measures to assist with further analysis:**
 
-### 2.2 Advanced Statistical Calculations
+- **Total Accidents**:
+  ```DAX
+  Total Accidents = COUNT('Accidents'[accident_index])
+  ```
+- **Average Vehicles per Accident**:
+  ```DAX
+  Avg Vehicles = AVERAGE('Accidents'[number_of_vehicles])
+  ```
 
-These calculations help us identify significant patterns and anomalies in our data:
+2. **Visualising Basic Measures:**
 
-1. Z-Score calculation:
+- **Total Accidents**: Create a **Card** visual by selecting the _Total Accidents_ measure to display the total count of accidents.
+- **Average Vehicles per Accident**: Create another **Card** visual for _Avg Vehicles_ to show the average number of vehicles involved in accidents.
 
-   - Z-scores tell us how many standard deviations an observation is from the mean
-   - Crucial for identifying statistically significant outliers
-   - Create this measure:
-     ```
-     CasualtyZScore =
-     DIVIDE(
-         Accidents[number_of_casualties] - [MeanCasualties],
-         [StdDevCasualties]
-     )
-     ```
-   - Z-scores beyond ±2 indicate unusual events requiring investigation
+---
 
-2. Moving Average:
-   - This helps us identify trends while smoothing out daily variations
-   - Seven-day window captures weekly patterns while reducing noise
-   - Implement as:
-     ```
-     SevenDayMA =
-     AVERAGEX(
-         DATESINPERIOD(
-             Accidents[date],
-             LASTDATE(Accidents[date]),
-             -7,
-             DAY
-         ),
-         CALCULATE(COUNT(Accidents[accident_index]))
-     )
-     ```
-   - Use this to detect emerging trends in accident frequency
+### Part 3: Advanced Exploratory Data Analysis (EDA)
 
-## Part 3: Implementing Statistical Tests
+#### 3.1 Multivariate Analysis
 
-### 3.1 Chi-Square Test Components
+We’ll start by analysing how multiple variables interact, such as `day_of_week` with `accident_severity`.
 
-The Chi-Square test helps us determine if there are significant relationships between categorical variables in our accident data:
+1. **Create a Measure for Severity by Day**:
+   ```DAX
+   Severity by Day =
+   CALCULATE(
+       AVERAGE('Accidents'[accident_severity]),
+       ALLEXCEPT('Accidents', 'Accidents'[day_of_week])
+   )
+   ```
+2. **Visualise Severity by Day**:
+   - Add a **Bar Chart** from the _Visualizations_ pane.
+   - Set `day_of_week` on the x-axis and the `Severity by Day` measure as the y-axis.
+   - This will show the average accident severity for each day of the week, allowing you to observe trends over time.
 
-1. Expected Frequency:
+#### 3.2 Dimensionality Reduction
 
-   - This calculates what we would expect if there was no relationship
-   - We'll compare this to actual observations
-   - Create the measure:
-     ```
-     ExpectedFreq =
-     CALCULATE(
-         DIVIDE(
-             COUNTROWS(Accidents),
-             DISTINCTCOUNT(Accidents[road_type])
-         ),
-         ALL(Accidents)
-     )
-     ```
-   - The ALL() function ensures we're using the total dataset as our baseline
-   - Significant differences from this expected value suggest meaningful patterns
+Use a measure to approximate dimensionality reduction by summarising accident severity across combined categories.
 
-2. Chi-Square Statistic:
-   - This measures how far our observed values deviate from expected
-   - Larger values indicate stronger relationships
-   - Implement using:
-     ```
-     ChiSquare =
-     SUMX(
-         VALUES(Accidents[road_type]),
-         POWER(COUNT(Accidents[accident_index]) - [ExpectedFreq], 2) /
-         [ExpectedFreq]
-     )
-     ```
-   - Values above 16.919 (with 9 degrees of freedom) indicate significance at p < 0.05
+1. **Create an Aggregated Severity Measure**:
+   ```DAX
+   Aggregated Severity =
+   SUMX(
+       'Accidents',
+       'Accidents'[accident_severity] * 'Accidents'[number_of_vehicles]
+   )
+   ```
+2. **Visualise Aggregated Severity by Location on a Map**:
+   - Add a **Map** visual from the _Visualizations_ pane.
+   - Drag `latitude` to _Latitude_ and `longitude` to _Longitude_.
+   - Set the `Aggregated Severity` measure to the _Size_ field, adjusting the size of each point based on accident severity.
+   - Format the map by applying a colour scale in the _Data colors_ section, which can help in identifying clusters of high-severity accidents.
 
-### 3.2 ANOVA Implementation
+---
 
-Analysis of Variance (ANOVA) helps us compare accident patterns across different groups:
+### Part 4: Statistical Analysis with DAX
 
-1. Between Groups Variance:
+#### 4.1 Hypothesis Testing: Comparing Severity on Weekdays vs Weekends
 
-   - Measures how different the groups are from each other
-   - Higher values suggest distinct patterns across groups
-   - Create this measure:
-     ```
-     BetweenGroupsVariance =
-     VARX.P(
-         SUMMARIZE(
-             Accidents,
-             Accidents[road_type],
-             "GroupMean", AVERAGE(Accidents[number_of_casualties])
-         ),
-         [GroupMean]
-     )
-     ```
-   - This helps identify if certain road types consistently have different accident patterns
+1. **Create a `Day Type` Column in the `Accidents` Table**:
 
-2. Within Groups Variance:
-   - Measures the variability within each group
-   - Helps determine if patterns are consistent
-   - Implement as:
-     ```
-     WithinGroupsVariance =
-     AVERAGEX(
-         VALUES(Accidents[road_type]),
-         VAR CurrentMean = CALCULATE(AVERAGE(Accidents[number_of_casualties]))
-         RETURN
-         CALCULATE(
-             VARX.P(
-                 Accidents,
-                 Accidents[number_of_casualties]
-             )
-         )
-     )
-     ```
-   - Lower values indicate more consistent patterns within each road type
-
-## Part 4: Building the Statistical Dashboard
-
-### 4.1 Creating Statistical Visualizations
-
-Our visualizations need to clearly communicate statistical insights:
-
-1. Distribution Analysis:
-
-   - Add a Histogram visual to show casualty distribution
-   - Why it's important:
-     - Shows the shape of our data distribution
-     - Helps identify unusual patterns
-     - Reveals potential data quality issues
-   - Configuration steps:
-     a. Set bin width to meaningful intervals (e.g., 1 for casualties)
-     b. Add Z-score reference lines at ±2 standard deviations
-     c. Use color gradients to highlight significant deviations
-
-2. Time Series Analysis:
-   - Creates a comprehensive view of temporal patterns
-   - Implementation steps:
-     a. Create a line chart with daily accident counts
-     b. Add the seven-day moving average
-     c. Include confidence intervals (±2 standard deviations)
-   - This helps identify:
-     - Seasonal patterns
-     - Day-of-week effects
-     - Long-term trends
-     - Unusual spikes or dips
-
-### 4.2 Statistical Control Charts
-
-Control charts are crucial for monitoring accident patterns and detecting significant changes:
-
-1. Accident Rate Control Chart:
-
-   - Shows if accident rates are "in control" or showing unusual variation
-   - Implementation:
-     a. Base line: Plot daily accident count
-     b. Center line: Add seven-day moving average
-     c. Control limits: Add ±2 standard deviation bounds
-   - This helps identify:
-     - Out-of-control points needing investigation
-     - Shifts in accident patterns
-     - Cyclical variations
-
-2. Significance Indicators:
-   - Provides clear visual alerts for significant deviations
-   - Create this measure:
-     ```
-     SignificanceFlag =
+   - In the **Accidents** table, create a calculated column to label each row as either "Weekday" or "Weekend" based on the `day_of_week` value.
+   - Go to the **Modeling** tab and select **New Column**.
+   - Enter the following DAX formula:
+     ```DAX
+     Day Type =
      IF(
-         ABS([CasualtyZScore]) > 2,
-         "⚠️ Significant Deviation",
-         "✓ Within Expected Range"
+         'Accidents'[day_of_week] <= 5,
+         "Weekday",
+         "Weekend"
      )
      ```
-   - Use conditional formatting to highlight:
-     - Significant spikes in accident rates
-     - Unusual patterns needing investigation
-     - Successful safety interventions
+   - This will create a `Day Type` column that dynamically assigns "Weekday" to records with `day_of_week` values of 1 to 5, and "Weekend" to records with `day_of_week` values of 6 or 7.
 
-## Conclusion
+2. **Create Measures for Weekday and Weekend Severity**:
 
-This statistical framework provides a robust foundation for understanding traffic accident patterns. You now have:
+   - With the `Day Type` column in place, you can now calculate the average severity for each day type.
+   - Define the following DAX measures:
 
-- Rigorous statistical measures for accident analysis
-- Tools to identify significant patterns and relationships
-- Visual methods to communicate findings effectively
-- A systematic approach to monitoring traffic safety
+     ```DAX
+     Weekday Severity =
+     CALCULATE(
+         AVERAGE('Accidents'[accident_severity]),
+         'Accidents'[Day Type] = "Weekday"
+     )
+     ```
 
-### Activity
+     and:
 
-Let's apply these statistical tools to your data:
+     ```DAX
+     Weekend Severity =
+     CALCULATE(
+       AVERAGE('Accidents'[accident_severity]),
+       'Accidents'[Day Type] = "Weekend"
+     )
+     ```
 
-1. Statistical Pattern Analysis:
+3. **Visualise Weekday vs Weekend Severity**:
+   - Create a **Clustered Bar Chart**.
+   - Drag the new `Day Type` column to the **X-Axis**.
+   - Add `Weekday Severity` and `Weekend Severity` as **Values** on the **Y-Axis**.
+   - Ensure that the chart is set to display average severity, not a count of values.
 
-   - Run the Chi-Square test on road types and severity
-   - What patterns emerge? Are they statistically significant?
+**Interpreting the Results**:
 
-2. Temporal Analysis:
+- If you observe similar values for `Weekday Severity` and `Weekend Severity` (e.g., 2.7 and 2.8), this could indicate that accident severity does not vary significantly between weekdays and weekends in the dataset. This is not unusual if the dataset reflects homogeneous accident severity.
+- **Next Steps**:
+  - Consider increasing decimal places in **Data Labels** to emphasise minor differences.
+  - Use other dimensions such as **local authority district** or **road type** for more granularity.
+  - For statistical significance testing, consider exporting the data for t-testing in a tool like Excel, R, or SPSS.
 
-   - Use the control charts to identify unusual periods
-   - Can you explain the variations you find?
+## Part 5: ANOVA for Accident Severity Across Days
 
-3. Location-Based Statistics:
+Use DAX to compare severity across multiple days using a variance measure.
 
-   - Apply ANOVA to compare different areas
-   - Are there significant differences between locations?
+### 5.1 **Create a Variance Measure for Severity by Day**:
 
-4. Correlation Investigation:
-   - Examine relationships between weather and severity
-   - Use statistical tests to verify your findings
+```DAX
+Variance in Severity =
+VAR SeverityMean = AVERAGE('Accidents'[accident_severity])
+RETURN
+    SUMX(
+        'Accidents',
+        POWER('Accidents'[accident_severity] - SeverityMean, 2)
+    )
+```
 
-Remember: Statistical significance (p < 0.05) should be combined with practical significance when making safety recommendations.
+2. **Visualise Variance by Day**:
+   - Add a **Line Chart** and place `day_of_week` on the x-axis and `Variance in Severity` on the y-axis.
+   - This visual will highlight which days show higher variance in accident severity, which may indicate inconsistencies worth investigating.
+
+---
+
+## Part 6: Recap and Next Steps
+
+By completing this tutorial, you now have experience:
+
+- Creating complex DAX measures to analyse and summarise accident data.
+- Performing multivariate analysis and dimensionality reduction.
+- Applying statistical concepts, like hypothesis testing and ANOVA, using DAX measures.
+
+**Activity**: Test different groupings of `local_authority_district` and `accident_severity` to explore if certain regions show higher variances in accident severity, suggesting targeted intervention.
+
+This tutorial should support your understanding of DAX and Power BI for robust EDA and statistical analysis, enhancing data-driven decision-making.
