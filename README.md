@@ -94,15 +94,31 @@ GitHub Codespaces provides a complete, configurable dev environment in the cloud
 
 6. Once the Codespace is ready, you'll see a VS Code-like interface in your browser.
 
-7. Open the terminal in the Codespace and run:
+7. Open the integrated terminal in the Codespace by selecting **Terminal** from the top menu, then choose **New Terminal**. Alternatively, use the shortcut `Ctrl + `` (backtick).
+
+8. Create a virtual environment in the terminal:
 
    ```
-   pip install -r requirements.txt
+   python3 -m venv venv
    ```
 
-8. Navigate to the `notebooks/` directory and open the `ecommerce_analysis.ipynb` file.
+9. Activate the virtual environment:
 
-9. You can now run and modify the notebook directly in the Codespace.
+   ```
+   source venv/bin/activate
+   ```
+
+   You should see `(venv)` in the terminal prompt, indicating that the virtual environment is active.
+
+10. Install the required packages:
+
+    ```
+    pip install -r requirements.txt
+    ```
+
+11. Navigate to the `notebooks/` directory and open the `ecommerce_analysis.ipynb` file.
+
+12. You can now run and modify the notebook directly in the Codespace.
 
 Note: Codespaces will automatically save your work. When you're done, you can close the browser tab. Your Codespace will be automatically stopped after a period of inactivity.
 
